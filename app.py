@@ -1,85 +1,63 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 
-# Load the trained model (Pipeline is recommended)
+# Load the trained model
 model = joblib.load("best_model.pkl")
 
+# Set Streamlit page config
 st.set_page_config(page_title="Employee Salary Classification", page_icon="💼", layout="centered")
 
 st.title("💼 Employee Salary Classification App")
-st.markdown("Predict whether an employee earns >50K or ≤50K based on input features.")
 
-# Sidebar inputs
-st.sidebar.header("Input Employee Details")
+# Sidebar for input
+st.sidebar.header("Enter Employee Details")
 
-# User Inputs
-age = st.sidebar.slider("Age", 18, 65, 30)
-education = st.sidebar.selectbox("Education Level", [
-    "Bachelors", "Masters", "PhD", "HS-grad", "Assoc", "Some-college"
-])
-occupation = st.sidebar.selectbox("Job Role", [
-    "Tech-support", "Craft-repair", "Other-service", "Sales",
-    "Exec-managerial", "Prof-specialty", "Handlers-cleaners", "Machine-op-inspct",
-    "Adm-clerical", "Farming-fishing", "Transport-moving", "Priv-house-serv",
-    "Protective-serv", "Armed-Forces"
-])
-hours_per_week = st.sidebar.slider("Hours per week", 1, 80, 40)
-experience = st.sidebar.slider("Years of Experience", 0, 40, 5)
+def user_input_features():
+    age = st.sidebar.slider("Age", 17, 76, 30)
+    workclass = st.sidebar.selectbox("Workclass", [0, 1, 2, 3, 4, 5, 6])
+    fnlwgt = st.sidebar.number_input("Final Weight (fnlwgt)", min_value=10000, max_value=1000000, value=50000)
+    educational_num = st.sidebar.slider("Education Number", 5, 16, 10)
+    marital_status = st.sidebar.selectbox("Marital Status", [0, 1, 2])
+    occupation = st.sidebar.selectbox("Occupation", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+    relationship = st.sidebar.selectbox("Relationship", [0, 1, 2, 3, 4])
+    race = st.sidebar.selectbox("Race", [0, 1, 2, 3, 4])
+    gender = st.sidebar.selectbox("Gender", [0, 1])  # 0: Female, 1: Male
+    capital_gain = st.sidebar.number_input("Capital Gain", min_value=0, value=0)
+    capital_loss = st.sidebar.number_input("Capital Loss", min_value=0, value=0)
+    hours_per_week = st.sidebar.slider("Hours per Week", 1, 100, 40)
+    native_country = st.sidebar.selectbox("Native Country", list(range(0, 42)))  # Adjust based on your encoding
 
-# Construct DataFrame from input
-input_df = pd.DataFrame({
-    'age': [age],
-    'education': [education],
-    'occupation': [occupation],
-    'hours-per-week': [hours_per_week],
-    'experience': [experience]
-})
+    data = {
+        'age': age,
+        'workclass': workclass,
+        'fnlwgt': fnlwgt,
+        'educational-num': educational_num,
+        'marital-status': marital_status,
+        'occupation': occupation,
+        'relationship': relationship,
+        'race': race,
+        'gender': gender,
+        'capital-gain': capital_gain,
+        'capital-loss': capital_loss,
+        'hours-per-week': hours_per_week,
+        'native-country': native_country
+    }
 
-st.write("### 🔎 Input Data")
+    return pd.DataFrame(data, index=[0])
+
+# Get user input
+input_df = user_input_features()
+
+st.subheader("📊 User Input:")
 st.write(input_df)
 
-# Check feature compatibility
-if hasattr(model, "feature_names_in_"):
-    expected_features = list(model.feature_names_in_)
-    input_df = input_df.reindex(columns=expected_features, fill_value=0)
-
-# Predict button
-if st.button("Predict Salary Class"):
+# Make prediction
+if st.button("Predict Salary Category"):
     try:
         prediction = model.predict(input_df)
-        st.success(f"✅ Prediction: {prediction[0]}")
-    except ValueError as e:
-        st.error("❌ Prediction failed due to input mismatch.")
-        st.code(str(e))
-        st.warning("Check if input column names and types match model training data.")
-
-# Batch Prediction Section
-st.markdown("---")
-st.markdown("#### 📂 Batch Prediction")
-uploaded_file = st.file_uploader("Upload a CSV file for batch prediction", type="csv")
-
-if uploaded_file is not None:
-    try:
-        batch_data = pd.read_csv(uploaded_file)
-        st.write("📄 Uploaded Data Preview:")
-        st.write(batch_data.head())
-
-        # Align columns if model has feature names
-        if hasattr(model, "feature_names_in_"):
-            expected_features = list(model.feature_names_in_)
-            batch_data = batch_data.reindex(columns=expected_features, fill_value=0)
-
-        batch_preds = model.predict(batch_data)
-        batch_data['PredictedClass'] = batch_preds
-
-        st.success("✅ Batch Prediction Completed:")
-        st.write(batch_data.head())
-
-        # Download option
-        csv = batch_data.to_csv(index=False).encode('utf-8')
-        st.download_button("Download Predictions CSV", csv, file_name='predicted_classes.csv', mime='text/csv')
-
+        result = "Income >50K" if prediction[0] == 1 else "Income <=50K"
+        st.success(f"💰 Predicted Salary Category: **{result}**")
     except Exception as e:
-        st.error("❌ Batch prediction failed.")
-        st.code(str(e))
+        st.error(f"❌ Prediction failed: {e}")
