@@ -12,7 +12,20 @@ st.set_page_config(page_title="Employee Salary Classification", page_icon="💼"
 st.title("💼 Employee Salary Classification App")
 st.markdown("Enter the employee details below to predict their salary category.")
 
-# Sidebar inputs
+# === Native Country Mapping ===
+native_country_map = {
+    0: "Cambodia", 1: "Canada", 2: "China", 3: "Columbia", 4: "Cuba",
+    5: "Dominican-Republic", 6: "Ecuador", 7: "El-Salvador", 8: "England",
+    9: "France", 10: "Germany", 11: "Greece", 12: "Guatemala", 13: "Haiti",
+    14: "Holand-Netherlands", 15: "Honduras", 16: "Hong", 17: "Hungary",
+    18: "India", 19: "Iran", 20: "Ireland", 21: "Italy", 22: "Jamaica",
+    23: "Japan", 24: "Laos", 25: "Mexico", 26: "Nicaragua", 27: "Outlying-US(Guam-USVI-etc)",
+    28: "Peru", 29: "Philippines", 30: "Poland", 31: "Portugal", 32: "Puerto-Rico",
+    33: "Scotland", 34: "South", 35: "Taiwan", 36: "Thailand", 37: "Trinadad&Tobago",
+    38: "United-States", 39: "Vietnam", 40: "Yugoslavia", 41: "Others"
+}
+
+# === Sidebar for input ===
 st.sidebar.header("🧾 Input Employee Details")
 
 def user_input_features():
@@ -76,8 +89,8 @@ def user_input_features():
 
     native_country = st.sidebar.selectbox(
         "Native Country (Label Encoded)",
-        options=list(range(42)),
-        format_func=lambda x: f"Country Code {x}"
+        options=list(native_country_map.keys()),
+        format_func=lambda x: f"{x} = {native_country_map[x]}"
     )
 
     data = {
@@ -98,13 +111,13 @@ def user_input_features():
 
     return pd.DataFrame(data, index=[0])
 
-# Get input data
+# === Get Input ===
 input_df = user_input_features()
 
 st.subheader("📋 User Input Summary:")
 st.write(input_df)
 
-# Predict button
+# === Prediction ===
 if st.button("🔍 Predict Salary Category"):
     try:
         prediction = model.predict(input_df)
@@ -112,3 +125,7 @@ if st.button("🔍 Predict Salary Category"):
         st.success(f"✅ Predicted Salary Category: **{result}**")
     except Exception as e:
         st.error(f"❌ Prediction failed: {e}")
+
+# === Label Encoding Reference ===
+with st.expander("📌 Label Encoding Reference for Native Country"):
+    st.write(pd.DataFrame(list(native_country_map.items()), columns=["Code", "Country"]))
